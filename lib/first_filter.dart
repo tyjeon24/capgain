@@ -21,7 +21,7 @@ Map filtermap1 = { // 취득원인맵
     "증여",
     "상속"
   ]
-}
+};
 
 // 호출하는 법
 // 취득시종류맵["주택(주거용 오피스텔 포함)"]["매매"]
@@ -112,7 +112,7 @@ Map filtermap2 = { // 취득시종류맵
       "분양권(2022년 이후 취득)"
     ]
   }
-}
+};
 
 List<Map> baseInfo = [
   {
@@ -140,4 +140,4 @@ List<Map> baseInfo = [
     "type":"dropdown",
     "contents":null,
   }
-]
+];
