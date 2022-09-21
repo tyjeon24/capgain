@@ -1,158 +1,128 @@
-import 'package:capgain/CapGainWidgets/CapGainWidgets.dart';
-import 'package:capgain/CapGainWidgets/CustomDropDown.dart';
 import 'package:capgain/first_filter.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
-import 'package:async/async.dart';
-import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+import 'widgets/custom_dropdown.dart';
+import 'param_controller.dart';
+import 'widgets/custom_oxdropdown.dart';
+import 'widgets/custom_datepicker.dart';
+import 'package:flutter_localizations/flutter_localizations.dart'; // 달력 한글 출력용
 
 void main() {
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
-
-  // This widget is the root of your application.
+  final mainController = Get.put(CapitalGainsParameter());
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const CapitalGainsTaxPage(title: 'Flutter Demo Home Page'),
+    return GetMaterialApp(
+      localizationsDelegates: [
+        // 달력 한글 출력용
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate
+      ],
+      supportedLocales: [
+        // 달력 한글 출력용
+        const Locale('ko', 'KR'),
+        // include country code too
+      ],
+      home: CapitalGainsTaxPage(),
     );
   }
 }
 
-class CapitalGainsTaxPage extends StatefulWidget {
-  const CapitalGainsTaxPage({Key? key, required this.title}) : super(key: key);
-  final String title;
-
-  @override
-  State<CapitalGainsTaxPage> createState() => CapitalGainsTaxPageState();
-}
-
-class CapitalGainsTaxPageState extends State<CapitalGainsTaxPage> {
-
-  final asyncMemoizer = AsyncMemoizer();
-
-  Map<String, String?> params = {
-    "양도예정일":null,
-    "주소":null,
-    "양도시 종류":null,
-    "취득 원인":null,
-    "취득시 종류":null,
-  };
-
+class CapitalGainsTaxPage extends StatelessWidget {
+  final controller = Get.find<CapitalGainsParameter>();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: 1000,
-            ),
-            child: FutureBuilder(
-                future: getCSVonce(),
-                builder: (context,snapshot){
-                  return ListView.builder(
-                      itemCount: baseInfo.length,
-                      itemBuilder: (context, index){
-                        if(baseInfo[index]['type'] == 'date'){
-                          return Container(child: Text('type == date'),);
-                        }
-                        else if (baseInfo[index]['type'] == 'address'){
-                          return Text('type == address');
-                        }
-                        else if(baseInfo[index]['type'] == 'dropdown'){
-                          return typeDropDown(index,true);
-                        }
-                        else {
-                          return const Text('baseinfo type error : 해당하는 타입이 없습니다.');
-                        }
+        child: Padding(
+          padding: const EdgeInsets.all(33.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              // ################################### 1. 기본 정보 ###############################################
+              CustomDatePicker("양도예정일"),
+              CustomDropdownButton(
+                  baseInfo[2]["smallTitle"], baseInfo[2]["contents"]),
 
-                      }
-                  );
+              Obx(() {
+                if (controller.param.value[baseInfo[2]["smallTitle"]] == null) {
+                  return Container();
                 }
-            ),
+
+                return CustomDropdownButton(
+                    baseInfo[3]["smallTitle"],
+                    filtermap1[
+                        controller.param.value[baseInfo[2]["smallTitle"]]]);
+              }),
+
+              CustomOXDropdownButton("상속여부"),
+
+              Obx(() {
+                if (controller.param.value[baseInfo[3]["smallTitle"]] == null) {
+                  return Container();
+                }
+
+                return CustomDropdownButton(
+                    baseInfo[4]["smallTitle"],
+                    filtermap2[controller.param.value["양도시 종류"]]
+                        [controller.param.value["취득 원인"]]);
+              }),
+
+              Obx(() {
+                if (controller.param.value[baseInfo[3]["smallTitle"]] == null) {
+                  return Container();
+                }
+
+                return CustomDropdownButton(
+                    baseInfo[4]["smallTitle"],
+                    filtermap2[controller.param.value["양도시 종류"]]
+                        [controller.param.value["취득 원인"]]);
+              }),
+
+              // ################################### 2. 추가 정보 ###############################################
+              // Obx(() {
+              //   if (controller.param.value[baseInfo[2]["smallTitle"]] == null ||
+              //       controller.param.value[baseInfo[3]["smallTitle"]] == null ||
+              //       controller.param.value[baseInfo[4]["smallTitle"]] == null) {
+              //     return Container();
+              //   }
+
+              //   var addtionalInfo = [];
+              // }),
+
+              // ################################### 출력 ###############################################
+              Obx(
+                () => Text("${controller.param.value}"),
+              ),
+            ],
           ),
         ),
-      ) // This trailing comma makes auto-formatting nicer for build methods.
+      ),
     );
   }
+}
 
-  Widget typeDate(int index, bool activated){
-    DateTime transferDate;
+class BaseInfoColumn extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    List<Widget> baseInfoList = [];
 
-    return Column(
-      children: [
-        smallTitle(baseInfo[index]['smallTitle']),
-        Row(
-          children: [
-            Text(''),
-            TextButton(
-                onPressed: (){
-
-                },
-                child: Text('날짜 선택')
-            ),
-          ],
-        )
-      ],
-    );
-  }
-
-  Widget typeDropDown(int index, bool activated){
-    //CustomDropDown _dropDown = CustomDropDown(items: baseInfo[index]['contents'], activated: activated, widgetName: baseInfo[index]['smallTitle']);
-
-    List<String>? contents = baseInfo[index]['contents'];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        smallTitle(baseInfo[index]['smallTitle']),
-        DropdownButton(
-          value: params[baseInfo[index]['smallTitle']],
-            items: ((){
-              if(contents != null){
-                return contents.map(
-                        (value){
-                      return DropdownMenuItem(
-                          value: value,
-                          child: Text(value)
-                      );
-                    }
-                ).toList();
-              }
-              else {return null;}
-            })(),
-            onChanged: (value){
-              setState(() {
-                params[baseInfo[index]['smallTitle']] = value as String;
-              });
-            }
-        )
-      ],
-    );
-  }
-
-
-  Future getCSVonce() => asyncMemoizer.runOnce(()async{
-    String _rawData2 = await rootBundle.loadString('assets/capgain/AcquisitionDate.CSV');
-
-    List<List<dynamic>> listData2 = []; //=  CsvToListConverter().convert(_rawData2);
-
-    List<String> _l2 = _rawData2.split('\n');
-    for(int i = 0 ; i < _l2.length - 1 ;i++){
-      listData2.add(_l2[i].split(','));
-      if(listData2[i][7] != null && listData2[i][7].length > 0){
-        listData2[i][7] = listData2[i][7].toString().substring(0,listData2[i][7].length - 1);
+    for (int i = 0; i < baseInfo.length; i++) {
+      if (baseInfo[i]["type"] == "date") {
+        // baseInfoList.add(날짜위젯)
+      } else if (baseInfo[i]["type"] == "address") {
+        // baseInfoList.add(주소위젯)
+      } else if (baseInfo[i]["type"] == "dropdown" &&
+          baseInfo[i]["contents"].length > 0) {
+        baseInfoList.add(CustomDropdownButton(
+            baseInfo[i]["smallTitle"], baseInfo[i]["contents"]));
       }
     }
 
-    return listData2;
-  });
+    return Column(children: baseInfoList);
+  }
 }
